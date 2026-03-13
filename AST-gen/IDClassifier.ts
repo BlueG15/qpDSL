@@ -9,14 +9,14 @@ export class IDClassifierClass<T extends string = never>  {
 
     private maxLookAhead = 0
 
-    register<K extends string>(name : string, ...contents : string[]){
+    register<K extends string>(name : K, ...contents : string[]){
         this.storage.push(...contents.map(
             s => {
                 const pattern = s.replace(/\s+/, " ").trim()
                 const count_space = s.split(" ").length
                 this.maxLookAhead = Math.max(count_space, this.maxLookAhead)
                 return {
-                    category : name as T,
+                    category : name as any,
                     pattern
                 }
             }
@@ -81,7 +81,7 @@ export class IDClassifierClass<T extends string = never>  {
         for(const E of this.classify(...ids)){
             res[E.category].push(E.str)
         }
-        return res
+        return res as Record<T, string[]>
     }
 
     is(str : string, category : T | "ID"){
@@ -97,7 +97,9 @@ export const IDClassifier = new IDClassifierClass()
 .register("pos_flag", "empty", "covered", "exposed")
 .register("zone_name", "field", "deck", "grave", "hand")
 .register("pos_property", "row", "col", "column", "x", "y")
-.register("card_property", "atk", "hp", "counters", "counter")
+.register("card_property", "atk", "hp")
+.register("counter", "counters", "counter")
 .register("directions", "left", "right", "up", "down")
 .register("damage_type", "physical", "magic", "heart")
+.register("random", "random")
 

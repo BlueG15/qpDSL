@@ -60,7 +60,6 @@ qpDSL/
 │   └── index.ts           # Lexer implementation
 └── Parser/
     ├── index.ts           # Parser implementation
-    ├── ActionsRegistry.ts # Action definitions
     └── IDClassifier.ts    # Identifier classification
 ```
 

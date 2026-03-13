@@ -385,7 +385,7 @@ target_pos_with_directions : KEYWORD_ALL flags_spec_pos KEYWORD_POS ( PREP_IN KE
 direction_arr : dir_elem (CM dir_elem)* ;
 dir_elem : LSB KEYWORD_DIRECTION_SPECIFIC (CM KEYWORD_DIRECTION_SPECIFIC)* RSB ; 
 
-target_pos_around_card : KEYWORD_POS PREPOSITION_TO? ID  PREP_OF card_spec ; //ex: (the) pos (to the) left of this card
+target_pos_around_card : KEYWORD_POS PREPOSITION_TO? ID PREP_OF card_spec ; //ex: (the) pos (to the) left of this card
 ```
 
 ```flags_spec_pos``` specifies:

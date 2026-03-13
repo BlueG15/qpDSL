@@ -3,22 +3,30 @@ const FILLER_WORDS = ["the", "would"]
 
 /** Makes a regex which is an "or" of all the words (incluiding the word boundaries), with i flag */
 function matchWholeWords(...s : string[]){
-    s = s.flatMap(s => s.split(" ").join("\\s+")).map(s => `\\b${s}\\b`)
+    s = s.map(str => str.replace(/_/g, " ")) // Convert underscores to spaces
+        .flatMap(s => s.split(" ").map(s => `(${s})`).join("\\s+"))
+        .map(s => `\\b${s}\\b`)
     s = s.sort((a, b) => b.length - a.length) //sort descending
     return new RegExp(s.join("|"), "i")
 }
 
 class TokenStorage<T extends string = "ID"> {
     ID : TokenType
-    storage : {[K in T] : TokenType} = {} as any
+    private storage : Record<string, TokenType> = {}
     get all() : TokenType[] {return [...Object.values(this.storage) as TokenType[], this.ID]}
 
     constructor(ID : RegExp){
         this.ID = createToken({
             name : "ID",
-            pattern : ID,
-            group : "ID"
+            pattern : ID
         })
+    }
+
+    createStorageObj(){
+        return {
+            ...this.storage,
+            ID : this.ID
+        } as Record<T, TokenType>
     }
 
     // withput automatic regex creation
@@ -26,7 +34,7 @@ class TokenStorage<T extends string = "ID"> {
         return this.register<K, "">(name, reg, Lexer.SKIPPED as "")
     }
     LITERAL<K extends string>(name : K, reg : RegExp){
-        return this.register("LITERAL", reg, name)
+        return this.register(`${name}_LITERAL`, reg, "")
     }
     SYMBOLS<K extends string>(name : K, reg : RegExp){
         return this.register(name, reg, "SYMBOL")
@@ -39,7 +47,8 @@ class TokenStorage<T extends string = "ID"> {
     private preprocessStrToReg(name : string, s : string[]){
         if(name.includes("_") && s.length === 0) return matchWholeWords(name);
         else if(name.includes(" ")) name = name.replaceAll(" ", "_");
-        return name.includes("_") ? matchWholeWords(...s) : matchWholeWords(name, ...s)
+        const res = name.includes("_") ? matchWholeWords(...s) : matchWholeWords(name, ...s)
+        return res
     }
     KEYWORD<K extends string>(name : K, ...s : string[]){
         const reg = this.preprocessStrToReg(name, s)
@@ -53,33 +62,31 @@ class TokenStorage<T extends string = "ID"> {
         const reg = this.preprocessStrToReg(name, s)
         return this.register(name, reg, "op")
     }
-
+    
     private register<
         T_Name extends string, T_group extends string,
         NewKey extends string = T_group extends "" ? T_Name : `${T_group}_${T_Name}`
     >(name : T_Name, pattern : RegExp, group : T_group) : TokenStorage<T | NewKey> {
         const token = createToken({
-            name, pattern, group
+            name,
+            pattern,
+            ...(group === Lexer.SKIPPED ? { group } : {})
         });
         const key = (!group.length || group === Lexer.SKIPPED) ? name : `${group}_${name}`;
-        (this.storage as any)[key] = token
+        (this.storage as any)[key] = token;
         return this as any
     }
 }
 
 // If this list has typos, its intentional;
 const Token = new TokenStorage(/[a-zA-Z]+/)
-.SKIPPED("slash_comment", /[/]{2}.*([\n\r]|$)/)
-.SKIPPED("block_comment", /[/][*].*[*][/]/)
+.SKIPPED("slash_comment", /[/]{2}.*[\n\r]?/)
+.SKIPPED("block_comment", /[/][*].*?[*][/]/)
 .SKIPPED("filler",matchWholeWords(...FILLER_WORDS))
-//effect positions, has to be above intlit
-.KEYWORD("first", "1st")
-.KEYWORD("second", "2nd")
-.KEYWORD("third", "3rd")
 //literal (placed first to match first, slight speedup)
+.LITERAL("PLACEMENT", /first|second|third|[0-9]+(th|st|nd|rd)/)
 .LITERAL("INT", /[0-9]+/)
 //symbols (placed first to match first, slight speedup)
-.SYMBOLS("EFFECT_PREFIX", /e_/)
 .SYMBOLS("ARROW", /[=\-]+>/)
 .SYMBOLS("EQ", /=/)
 .SYMBOLS("COLON", /:/)
@@ -93,7 +100,8 @@ const Token = new TokenStorage(/[a-zA-Z]+/)
 .SYMBOLS("RSB", /\]/)
 .SYMBOLS("QUESTION_MARK", /\?/)
 .SYMBOLS("UNDER_SCORE", /_/)
-.SKIPPED("unrecognized_symbols", /[^a-zA-Z\s]/)
+.SYMBOLS("PLUS", /\+/)
+.SYMBOLS("MINUS", /-/)
 // keywords
 .KEYWORD("back_reference", "it", "that", "them", "they", "those", "whose", "targeted")
 .KEYWORD("target", "targets")
@@ -157,8 +165,8 @@ const Token = new TokenStorage(/[a-zA-Z]+/)
 .OP("increase", "increases", "increasing")
 .OP("decrease", "decreases", "decreasing")
 .OP("exist", "exists")
-.OP("not_equal_to", "not", "not is", "is not", "different", "different to")
-.OP("equal_to", "is", "be", "same", "same as")
+.OP("not_equal_to", "not", "not is", "is not", "not equal to", "different", "different to", "is different to")
+.OP("equal_to", "is", "be", "same", "same as", "is same as", "equal to")
 .OP("and")
 .OP("or")
 .OP("less_than_or_equal", "no more", "no more than")
@@ -181,7 +189,8 @@ const Token = new TokenStorage(/[a-zA-Z]+/)
 .PREPOSITION("from")
 .PREPOSITION("where")
 .PREPOSITION("instead")
+.SKIPPED("white_space", /\s/)
 
-export const TOKENS = Token.storage
+export const TOKENS = Token.createStorageObj()
 export const ALL_TOKENS = Token.all
 export const qpRemakeLexer = new Lexer(ALL_TOKENS)
