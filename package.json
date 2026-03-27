@@ -12,14 +12,16 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "dev" : "npm run test",
-    "test": "npm run build && node ./lib/test/test-lexer.js && node ./lib/test/test-parser.js",
-    "build": "node dev/generate-types && tsc"
+    "dev": "npm run test",
+    "test": "npm run build && node ./lib/test/index.js",
+    "build": "tsc"
   },
   "dependencies": {
-    "chevrotain": "^11.2.0"
+    "chevrotain": "^11.2.0",
+    "undici-types": "^7.24.5"
   },
   "devDependencies": {
+    "@types/node": "^25.5.0",
     "typescript": "^5.9.3"
   }
 }

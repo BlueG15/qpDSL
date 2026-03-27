@@ -1,0 +1,446 @@
+import { ActionSegment, ConditionSegment, ExpectedTarget, TargetSegment } from "./stage3"
+import { TargetType, AmountModifier, Direction } from "./generic"
+import { SentenceSegment } from "./stage2"
+import type { KeywordCategory } from "../../stage3/keyword_categories";
+
+export class InferedTarget extends ExpectedTarget {
+    protected constructor(
+        oldTarget : ExpectedTarget,
+        public inferredType : TargetType,
+    ){
+        super(oldTarget.raw, oldTarget.expectedType)
+    }
+}
+
+// ===== Keyword classification =====
+
+export class KeywordTarget extends InferedTarget {
+    constructor(
+        raw : string,
+        public category : KeywordCategory
+    ){
+        super({raw} as any, TargetType.Keyword)
+    }
+}
+
+// ===== Amount Specification =====
+
+export class VarReference extends InferedTarget {
+    constructor(
+        oldTarget : ExpectedTarget,
+        public name : string
+    ){
+        super(oldTarget, TargetType.Number)
+    }
+}
+
+export class INT_LIT extends InferedTarget {
+    constructor(
+        oldTarget : ExpectedTarget,
+        public amount : number
+    ){
+        super(oldTarget, TargetType.Number)
+    }
+}
+
+export class AmountSpec {
+    constructor(
+        public amount: INT_LIT | VarReference | "all", 
+        public operator: AmountModifier = AmountModifier.EQ
+    ){}
+}
+
+// ===== Direction =====
+
+export class DirectionSpec {
+    constructor(
+        public directions: Direction[]
+    ){}
+}
+
+// ===== Flags =====
+
+export class Flag {}
+
+// Card Flags
+export class RandomFlag extends Flag {}
+
+/**Extension name have the dot upfront */
+export class ExtensionFlag extends Flag {
+    constructor(public extensionName: string){
+        super()
+    }
+}
+
+export class RarityFlag extends Flag {
+    constructor(public rarityValue: string){
+        super()
+    }
+}
+
+export class ArchetypeFlag extends Flag {
+    constructor(public archetypeName: string){
+        super()
+    }
+}
+
+export class PropertyValueFLag extends Flag {
+    constructor(
+        public statName: string,
+        public statValue: AmountSpec
+    ){
+        super()
+    }
+}
+
+export class PlayerFlag extends Flag {
+    constructor(public playerName: string, public playerIndex: number = 1){
+        super()
+    }
+}
+
+// Effect Flags
+export class EffectTypeFlag extends Flag {
+    constructor(public effectType: string){
+        super()
+    }
+}
+
+export class EffectSubtypeFlag extends Flag {
+    constructor(public effectSubtype: string){
+        super()
+    }
+}
+
+export type CardFlag   = 
+    RandomFlag        | 
+    ExtensionFlag     | 
+    RarityFlag        | 
+    ArchetypeFlag     | 
+    PropertyValueFLag | 
+    PlayerFlag
+
+export type EffectFlag = 
+    RandomFlag        | 
+    EffectTypeFlag    | 
+    EffectSubtypeFlag
+
+export type PosFlag    = 
+    RandomFlag | 
+    PropertyValueFLag
+
+export type ZoneFlag   = 
+    RandomFlag | 
+    PlayerFlag
+
+type AnyFLag = CardFlag | EffectFlag | PosFlag | ZoneFlag
+
+// ===== Backreference =====
+
+export class Backreference extends InferedTarget {
+    constructor(
+        raw : string,
+        public shape : InferedTarget,
+    ){
+        super(shape, shape.inferredType)
+        this.raw = raw
+    }
+
+    static isFlagOfShape(shapeFlags : AnyFLag[], targetFlags : AnyFLag[]) : boolean {
+
+        function hasFlagInstance<T extends new (...p : any) => AnyFLag>(
+            instance : T,
+            addedCheck? : (flag : InstanceType<T>) => boolean
+        ){
+            return targetFlags.some(f => f instanceof instance && (!addedCheck || addedCheck(f as any)))
+        }
+
+        for(const f of shapeFlags){
+            if(f instanceof RandomFlag){
+                if(!hasFlagInstance(RandomFlag)) return false
+            }
+            else if(f instanceof ExtensionFlag){
+                if(!hasFlagInstance(ExtensionFlag, f2 => {
+                    return f2.extensionName === f.extensionName
+                })) return false
+            }
+            else if(f instanceof RarityFlag){
+                if(!hasFlagInstance(RarityFlag, f2 => {
+                    return f2.rarityValue === f.rarityValue
+                })) return false
+            }
+            else if(f instanceof ArchetypeFlag){
+                if(!hasFlagInstance(ArchetypeFlag, f2 => {
+                    return f2.archetypeName === f.archetypeName
+                })) return false
+            }
+            else if(f instanceof PropertyValueFLag){
+                if(!hasFlagInstance(PropertyValueFLag, f2 => {
+                    return f2.statName === f.statName && f2.statValue.amount === f.statValue.amount && f2.statValue.operator === f.statValue.operator
+                })) return false
+            }
+            else if(f instanceof PlayerFlag){
+                if(!hasFlagInstance(PlayerFlag, f2 => {
+                    return f2.playerName === f.playerName && f2.playerIndex === f.playerIndex
+                })) return false
+            }
+            else if(f instanceof EffectTypeFlag){
+                if(!hasFlagInstance(EffectTypeFlag, f2 => {
+                    return f2.effectType === f.effectType
+                })) return false
+            }
+            else if(f instanceof EffectSubtypeFlag){
+                if(!hasFlagInstance(EffectSubtypeFlag, f2 => {
+                    return f2.effectSubtype === f.effectSubtype
+                })) return false
+            }
+            else return false
+        }
+
+        return true
+    }
+
+    static compareAmountSpec(spec1: AmountSpec, spec2: AmountSpec) : boolean {
+        return spec1.operator === spec2.operator && (
+            (spec1.amount === "all" && spec2.amount === "all") ||
+            (spec1.amount instanceof VarReference && spec2.amount instanceof VarReference && spec1.amount.name === spec2.amount.name) ||
+            (spec1.amount instanceof INT_LIT && spec2.amount instanceof INT_LIT && spec1.amount.amount === spec2.amount.amount) 
+        )
+    }
+
+    /**Returns if target of the given shape*/
+    static isTargetOfShape(
+        shape : InferedTarget, 
+        target : AnyInferedTarget | Backreference
+    ) : boolean | undefined {
+        if(shape.inferredType === TargetType.Any) return true;
+        if(shape.inferredType !== target.inferredType) return false;
+        if(target instanceof Backreference){
+            return target.shape === shape
+        }
+        if(shape instanceof CardTarget && target instanceof CardTarget){
+            return (
+                this.isFlagOfShape(shape.flags, target.flags) &&
+                (
+                    !shape.fromClause || (
+                        target.fromClause && 
+                        this.isTargetOfShape(shape.fromClause, target.fromClause)
+                    )
+                ) &&
+                shape.withClauses.every(swc => {
+                    let cond = true
+                    if(swc.effect){
+                        cond &&= target.withClauses.some(twc => twc.effect && this.isTargetOfShape(swc.effect!, twc.effect))
+                    }
+                    if(swc.stat){
+                        cond &&= target.withClauses.some(twc => twc.stat && twc.stat.statName === swc.stat!.statName && this.compareAmountSpec(swc.stat!.statValue, twc.stat.statValue))
+                    }
+                    return cond
+                })
+            )
+        }
+        else if(shape instanceof EffectTarget && target instanceof EffectTarget){
+            return (
+                this.isFlagOfShape(shape.flags, target.flags) &&
+                (
+                    !shape.fromClause || (
+                        target.fromClause && 
+                        this.isTargetOfShape(shape.fromClause, target.fromClause)
+                    )
+                )
+            )
+        }
+        else if(shape instanceof PosTarget && target instanceof PosTarget){
+            return (
+                this.isFlagOfShape(shape.flags, target.flags) &&
+                (
+                    !shape.fromClause || (
+                        target.fromClause &&
+                        this.isTargetOfShape(shape.fromClause, target.fromClause)
+                    )
+                ) &&
+                (
+                    !shape.directionClause || (
+                        target.directionClause &&
+                        shape.directionClause.every(sdc => target.directionClause!.some(tdc => sdc.directions.join(",") === tdc.directions.join(",")))
+                    )
+                ) &&
+                (
+                    !shape.distanceClause || (
+                        target.distanceClause &&
+                        this.compareAmountSpec(shape.distanceClause.distance, target.distanceClause.distance) &&
+                        this.isTargetOfShape(shape.distanceClause.from, target.distanceClause.from) &&
+                        (
+                            !shape.distanceClause.in ||
+                            (target.distanceClause.in && this.isTargetOfShape(shape.distanceClause.in, target.distanceClause.in))
+                        )
+                    )
+                ) &&
+                shape.withClauses.every(swc => {
+                    return target.withClauses.some(twc => this.isTargetOfShape(swc, twc))
+                })
+            )
+        }
+        else if(shape instanceof ZoneTarget && target instanceof ZoneTarget){
+            return (
+                this.isFlagOfShape(shape.flags, target.flags) &&
+                shape.zoneName === target.zoneName
+            )
+        }
+        return undefined
+    }
+
+    accept(potentialTarget : AnyInferedTarget){
+        if(this.shape.inferredType === TargetType.Any)
+            //accept anything if shape is any 
+            return new BackreferenceBounded(this, potentialTarget);
+        if (
+            Backreference.isTargetOfShape(this.shape, potentialTarget) === true
+        ) return new BackreferenceBounded(this, potentialTarget)
+        else return undefined
+    }
+}
+
+export class AnyBackreference extends Backreference {
+    constructor(raw : string){
+        super(raw, new InferedTarget(new ExpectedTarget(raw, TargetType.Any), TargetType.Any))
+    }
+}
+
+export class BackreferenceBounded extends Backreference {
+    constructor(
+        uninfered : Backreference,
+        public inferedTarget : InferedTarget,
+    ){
+        super(uninfered.raw, uninfered.shape)
+    }
+}
+
+// ===== Card Target =====
+
+export interface CardWithClause {
+    effect?: EffectTarget | Backreference
+    stat?: {
+        statName: string
+        statValue: AmountSpec
+    }
+}
+
+export class CardTarget extends InferedTarget {
+    constructor(
+        oldTarget : ExpectedTarget,
+        public amount?: AmountSpec,
+        public flags: CardFlag[] = [],
+        public fromClause?: ZoneTarget | PosTarget | Backreference,
+        public withClauses: CardWithClause[] = []
+    ){
+        super(oldTarget, TargetType.Card)
+    }
+}
+
+// ===== Effect Target =====
+
+export class EffectTarget extends InferedTarget {
+    constructor(
+        oldTarget : ExpectedTarget,
+        public amount?: AmountSpec,
+        public flags: EffectFlag[] = [],
+        public fromClause?: CardTarget | Backreference,
+    ){
+        super(oldTarget, TargetType.Effect)
+    }
+}
+
+// ===== Position Target =====
+
+export interface PositionDistanceClause {
+    distance: AmountSpec
+    from: CardTarget | PosTarget | Backreference
+    in? : ZoneTarget | Backreference
+}
+
+export class PosTarget extends InferedTarget {
+    constructor(
+        oldTarget : ExpectedTarget,
+        public amount?: AmountSpec,
+        public flags: PosFlag[] = [],
+        public fromClause?: ZoneTarget | Backreference,
+        public directionClause?: DirectionSpec[],
+        public distanceClause?: PositionDistanceClause,
+        public withClauses: (CardTarget | Backreference)[] = []
+    ){
+        super(oldTarget, TargetType.Position)
+    }
+}
+
+// ===== Zone Target =====
+
+export class ZoneTarget extends InferedTarget {
+    constructor(
+        oldTarget : ExpectedTarget,
+        public amount?: AmountSpec,
+        public flags: ZoneFlag[] = [],
+        public zoneName: string = ""
+    ){
+        super(oldTarget, TargetType.Zone)
+    }
+}
+
+// ===== Player Target =====
+
+export class PlayerTarget extends InferedTarget {
+    constructor(
+        oldTarget : ExpectedTarget,
+        public playerName : string,
+        public playerIndex : number = 1
+    ){
+        super(oldTarget, TargetType.Player)
+    }
+}
+
+// ===== Number Target =====
+
+export class NumberTarget extends InferedTarget {
+    constructor(
+        oldTarget : ExpectedTarget,
+        public amount : INT_LIT | VarReference,
+    ){
+        super(oldTarget, TargetType.Number)
+    }
+}
+
+// ===== Any target (util type) =====
+export type AnyInferedTarget = CardTarget | EffectTarget | PosTarget | ZoneTarget | PlayerTarget | NumberTarget
+
+// ===== Sentence segments =====
+
+export class InferedActionSegment extends SentenceSegment {
+    constructor(
+        segment : ActionSegment,
+        public actionID : string,
+        public inferedClassificationPath : InferedTarget[],
+    ){
+        super(segment.raw)
+    }
+}
+
+export class InferedTargetSegment extends SentenceSegment {
+    constructor(
+        segment : TargetSegment,
+        public inferedClassificationPaths : InferedTarget[]
+    ){
+        super(segment.raw)
+    }
+}
+
+export class InferedConditionSegment extends SentenceSegment {
+    constructor(
+        segment : ConditionSegment,
+        public conditionID : string,
+        public inferedClassificationPaths : InferedTarget[],
+    ){
+        super(segment.raw)
+    }
+}
+
+
