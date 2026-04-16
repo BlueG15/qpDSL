@@ -10,14 +10,13 @@ This document lists all action definitions with their creation and intercept/con
 
 | Action Name | Keyword Synonyms | Creation Sequence | Intercept Sequence |
 |---|---|---|---|
-| cond_count | — | — | (count|number) of (card|effect) is {0} |
-| cond_exist | exist exists existed | — | exist (card | effect) |
+| cond_exist | exist exists existed | — | exist (card | effect | pos | zone) |
 | cond_compare_number | — | — | {0} is {0} |
 | cond_card_has | has have had own owns owned | — | card has {0}? CARD_STAT |
 | cond_player_has | — | — | player has {0}? PLAYER_STAT |
 | cond_zone_has | — | — | zone has {0}? (card|card!) |
 | cond_card_on | — | — | card is on (pos | zone) |
-| cond_effect_has | — | — | effect has (EFFECT_TYPE|EFFECT_SUBTYPE) |
+| cond_effect_has | — | — | effect has (EFFECT_MODIFIER) |
 | a_any | turn turns | — | player turn? action! |
 | a_any | — | — | any action! |
 | a_turn_start | start | — | turn start |
@@ -43,8 +42,8 @@ This document lists all action definitions with their creation and intercept/con
 | a_move | move moves moved send sent sends play plays playes played | (move|add) card to (pos | zone) | card is move (from (pos | zone))? (to (pos | zone))? |
 | a_move | — | (move|add) effect to card | effect is move (from card)? (to card)? |
 | a_move | — | — | card is removed from (pos | zone) |
-| a_draw | draw draws drawn | draw {0} (card|card!)? | player draws ({0} (card|card!)?)? |
-| a_draw | — | turn draw {0}? (card|card!)? | player turn draw |
+| a_draw | draw draws drawn | draw ( {0} | card ) (card!)? | player draws ( {0} | card ) (card!)? |
+| a_draw | — | turn draw ( ( {0} | card ) (card!)? )? | player turn draw |
 | a_shuffle | shuffle shuffles shuffled | shuffle zone | zone is? shuffled |
 | a_add_status_effect | add adds added | add +-{0} CARD_STAT to card |  |
 | a_add_status_effect | receive receives received gain gains gained | add EXTENSION to card | extension of card is changed |
@@ -60,8 +59,7 @@ This document lists all action definitions with their creation and intercept/con
 | a_duplicate_card | — | duplicate card to (pos | zone) | card is duplicated (to (pos | zone))? |
 | a_attack | attack attacks | attack {0} (time|times)? |  |
 | a_attack | — | attack with {0} DAMAGE_TYPE? damage {0} (time|times)? |  |
-| a_lock | lock locks locked | lock |  |
-| a_damage_prevent | cannot can't cant | card cannot take no? (more|less) than {0} DAMAGE_TYPE? damage |  |
+| a_damage_prevent | cannot can't cant | card cannot take {0}? DAMAGE_TYPE? damage |  |
 | a_damage_prevent | — | card takes no DAMAGE_TYPE? damage |  |
 | — | — | — | — |
 
@@ -78,17 +76,15 @@ The following keyword categories are defined:
 - EFFECT_ID
 - EFFECT_MODIFIER
 - PLAYER_STAT
-- EFFECT_TYPE
-- EFFECT_SUBTYPE
 
 ---
 
 ## Statistics
 
-- **Total Actions:** 54
-- **Total Keyword Categories:** 8
-- **Total Creation Sequence Patterns:** 61
-- **Total Intercept Sequence Patterns:** 62
+- **Total Actions:** 52
+- **Total Keyword Categories:** 6
+- **Total Creation Sequence Patterns:** 53
+- **Total Intercept Sequence Patterns:** 57
 
 ---
 

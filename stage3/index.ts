@@ -21,32 +21,35 @@ function classify(
     ctx : AST.ASTNode, 
     type : "condition" | "creation",
     raw = ctx.raw,
-    tokens : IToken[] = Pipeline.exec(raw, Pipeline.lex(lexer)),
-    tries = 0
+    tokens : IToken[] = Pipeline.exec(raw, Pipeline.lex(lexer))
 ) : {
     action_name : string,
     targets : AST.ExpectedTarget[],
+    anchor_length : number
 }[]{
-    // console.log(".....")
-    const tokenTypes = tokens.map((t, i) => {
-        const cat = mapCategoryIfPossible(t.image)
-        if(cat && i < tries) return cat
-        return t.tokenType.name
-    })
+    // Build flexibility map: map token positions to their original image strings
+    // This allows checking if they can be classified as any keyword category
+    const original_image_arr = tokens.map(t => t.image)
 
-    const [bestMatch, bestPartialMatch] = lookup(tokenTypes, type)
+    if(CONFIG.VERBOSE){
+        console.log(`Classifying ${type} segment with raw input: "${raw}"`)
+        console.log(`Tokens: ${tokens.map(t => t.image + "(" + t.tokenType.name + ")").join(", ")}`)
+    }
+
+    // Try to classify with literal token types first, then try flexible classifications on-demand
+    const [bestMatch, bestPartialMatch] = lookup(tokens.map(t => t.tokenType.name), type, original_image_arr)
+
     if(!bestMatch.length){
-        if(tries >= tokens.length){
-            throw Context.error( new ERR.FailToClassifyActionError(raw, bestPartialMatch) )
-        }
-        return classify(ctx, type, raw, tokens, tries + 1)
+        throw Context.error( new ERR.FailToClassifyActionError(raw, bestPartialMatch) )
     }
     const pair = bestMatch.flatMap(m => m.matched_action.map(name => [
         name, 
-        m.classification_result
+        m
     ] as const))
     
-    return pair.map(([action_name,  classificationResults]) => {
+    return pair.map(([action_name,  res]) => {
+        const classificationResults = res.classification_result
+
         const raws = classificationResults.tokenIndices.map(indices => {
             if(!indices.length) return "";
             const toks = indices.map(i => tokens[i])
@@ -76,15 +79,16 @@ function classify(
             action_name,
             targets : T.map(([raw, t]) => {
                 if(isKeywordCategory(t)){
-                    const keywordCorrect = isCategory(raw, t)
-                    if(!keywordCorrect){
-                        Context.in(ctx)
-                        throw Context.error( new ERR.KeywordClassificationError(raw, t) )
-                    }
+                    // const keywordCorrect = isCategory(raw, t)
+                    // if(!keywordCorrect){
+                    //     Context.in(ctx)
+                    //     throw Context.error( new ERR.KeywordClassificationError(raw, t) )
+                    // }
                     return new AST.KeywordTarget(raw, t)
                 }
                 return new AST.ExpectedTarget(raw, t)
-            })
+            }),
+            anchor_length : res.anchor_positions.length 
         }
     })
 }

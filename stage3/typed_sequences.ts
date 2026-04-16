@@ -137,7 +137,6 @@ export const data = {
     ],
     a_draw_1 : [
         "keyword_draw",
-        TargetType.Number,
         TargetType.Card
     ],
     a_draw_2 : [
@@ -146,34 +145,34 @@ export const data = {
         "keyword_card"
     ],
     a_draw_3 : [
-        "keyword_turn",
-        "keyword_draw"
+        "keyword_draw",
+        TargetType.Card,
+        "keyword_card"
     ],
     a_draw_4 : [
         "keyword_turn",
-        "keyword_draw",
-        TargetType.Number
+        "keyword_draw"
     ],
     a_draw_5 : [
         "keyword_turn",
         "keyword_draw",
-        TargetType.Card
+        TargetType.Number
     ],
     a_draw_6 : [
         "keyword_turn",
         "keyword_draw",
-        TargetType.Number,
         TargetType.Card
     ],
     a_draw_7 : [
         "keyword_turn",
         "keyword_draw",
+        TargetType.Number,
         "keyword_card"
     ],
     a_draw_8 : [
         "keyword_turn",
         "keyword_draw",
-        TargetType.Number,
+        TargetType.Card,
         "keyword_card"
     ],
     a_shuffle_0 : [
@@ -345,25 +344,16 @@ export const data = {
         TargetType.Number,
         "keyword_times"
     ],
-    a_lock_0 : [
-        "keyword_lock"
-    ],
     a_damage_prevent_0 : [
         TargetType.Card,
         "keyword_cannot",
         "keyword_take",
-        "keyword_more",
-        "keyword_than",
-        TargetType.Number,
         "keyword_damage"
     ],
     a_damage_prevent_1 : [
         TargetType.Card,
         "keyword_cannot",
         "keyword_take",
-        "keyword_no",
-        "keyword_more",
-        "keyword_than",
         TargetType.Number,
         "keyword_damage"
     ],
@@ -371,103 +361,29 @@ export const data = {
         TargetType.Card,
         "keyword_cannot",
         "keyword_take",
-        "keyword_less",
-        "keyword_than",
-        TargetType.Number,
+        KeywordCategory.DAMAGE_TYPE,
         "keyword_damage"
     ],
     a_damage_prevent_3 : [
         TargetType.Card,
         "keyword_cannot",
         "keyword_take",
-        "keyword_no",
-        "keyword_less",
-        "keyword_than",
         TargetType.Number,
+        KeywordCategory.DAMAGE_TYPE,
         "keyword_damage"
     ],
     a_damage_prevent_4 : [
         TargetType.Card,
-        "keyword_cannot",
         "keyword_take",
-        "keyword_more",
-        "keyword_than",
-        TargetType.Number,
-        KeywordCategory.DAMAGE_TYPE,
+        "keyword_no",
         "keyword_damage"
     ],
     a_damage_prevent_5 : [
         TargetType.Card,
-        "keyword_cannot",
-        "keyword_take",
-        "keyword_no",
-        "keyword_more",
-        "keyword_than",
-        TargetType.Number,
-        KeywordCategory.DAMAGE_TYPE,
-        "keyword_damage"
-    ],
-    a_damage_prevent_6 : [
-        TargetType.Card,
-        "keyword_cannot",
-        "keyword_take",
-        "keyword_less",
-        "keyword_than",
-        TargetType.Number,
-        KeywordCategory.DAMAGE_TYPE,
-        "keyword_damage"
-    ],
-    a_damage_prevent_7 : [
-        TargetType.Card,
-        "keyword_cannot",
-        "keyword_take",
-        "keyword_no",
-        "keyword_less",
-        "keyword_than",
-        TargetType.Number,
-        KeywordCategory.DAMAGE_TYPE,
-        "keyword_damage"
-    ],
-    a_damage_prevent_8 : [
-        TargetType.Card,
-        "keyword_take",
-        "keyword_no",
-        "keyword_damage"
-    ],
-    a_damage_prevent_9 : [
-        TargetType.Card,
         "keyword_take",
         "keyword_no",
         KeywordCategory.DAMAGE_TYPE,
         "keyword_damage"
-    ],
-    cond_count_0 : [
-        "keyword_count",
-        "keyword_of",
-        TargetType.Card,
-        "op_is",
-        TargetType.Number
-    ],
-    cond_count_1 : [
-        "keyword_number",
-        "keyword_of",
-        TargetType.Card,
-        "op_is",
-        TargetType.Number
-    ],
-    cond_count_2 : [
-        "keyword_count",
-        "keyword_of",
-        TargetType.Effect,
-        "op_is",
-        TargetType.Number
-    ],
-    cond_count_3 : [
-        "keyword_number",
-        "keyword_of",
-        TargetType.Effect,
-        "op_is",
-        TargetType.Number
     ],
     cond_exist_0 : [
         "keyword_exist",
@@ -476,6 +392,14 @@ export const data = {
     cond_exist_1 : [
         "keyword_exist",
         TargetType.Effect
+    ],
+    cond_exist_2 : [
+        "keyword_exist",
+        TargetType.Position
+    ],
+    cond_exist_3 : [
+        "keyword_exist",
+        TargetType.Zone
     ],
     cond_compare_number_0 : [
         TargetType.Number,
@@ -541,12 +465,7 @@ export const data = {
     cond_effect_has_0 : [
         TargetType.Effect,
         "keyword_has",
-        KeywordCategory.EFFECT_TYPE
-    ],
-    cond_effect_has_1 : [
-        TargetType.Effect,
-        "keyword_has",
-        KeywordCategory.EFFECT_SUBTYPE
+        KeywordCategory.EFFECT_MODIFIER
     ],
     a_any_0 : [
         TargetType.Player,
@@ -757,23 +676,24 @@ export const data = {
     ],
     a_draw_9 : [
         TargetType.Player,
-        "keyword_draw"
+        "keyword_draw",
+        TargetType.Number
     ],
     a_draw_10 : [
         TargetType.Player,
         "keyword_draw",
-        TargetType.Number
+        TargetType.Card
     ],
     a_draw_11 : [
         TargetType.Player,
         "keyword_draw",
         TargetType.Number,
-        TargetType.Card
+        "keyword_card"
     ],
     a_draw_12 : [
         TargetType.Player,
         "keyword_draw",
-        TargetType.Number,
+        TargetType.Card,
         "keyword_card"
     ],
     a_draw_13 : [

@@ -21,8 +21,8 @@ KeywordMap[KeywordCategory.EFFECT_MODIFIER] = [
     ...CONFIG.EFFECT_SUBTYPES
 ]
 KeywordMap[KeywordCategory.PLAYER_STAT] = ["heart"]
-KeywordMap[KeywordCategory.EFFECT_TYPE] = CONFIG.EFFECT_TYPES
-KeywordMap[KeywordCategory.EFFECT_SUBTYPE] = CONFIG.EFFECT_SUBTYPES
+// KeywordMap[KeywordCategory.EFFECT_TYPE] = CONFIG.EFFECT_TYPES
+// KeywordMap[KeywordCategory.EFFECT_SUBTYPE] = CONFIG.EFFECT_SUBTYPES
 
 export function isCategory(str : string, ...category : KeywordCategory[]){
     for(const c of category){
@@ -45,8 +45,8 @@ export function mapCategoryIfPossible(
         KeywordCategory.EFFECT_ID,
         KeywordCategory.EFFECT_MODIFIER,
         KeywordCategory.PLAYER_STAT,
-        KeywordCategory.EFFECT_TYPE,
-        KeywordCategory.EFFECT_SUBTYPE
+        // KeywordCategory.EFFECT_TYPE,
+        // KeywordCategory.EFFECT_SUBTYPE
     ]
 ) : KeywordCategory | undefined {
     for(const c of category){

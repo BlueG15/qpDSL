@@ -24,15 +24,15 @@ function tryBindVarRef(
     name : string, 
     oldTarget: AST.ExpectedTarget,
     effect : AST.EffectDeclare
-){
+){ 
     const variable = effect.getVariable(name)
     if(!variable) throw Context.error( new ERR.UnknownVariableError(name, Object.keys(effect.variables)));
     return new AST.VarReference(oldTarget, name)
 }
 
 class Parser extends AstGenParser {
-    private boundedTarget?: AST.ExpectedTarget = undefined;
-    private boundedEffect?: AST.EffectDeclare = undefined; 
+    boundedTarget?: AST.ExpectedTarget = undefined;
+    boundedEffect?: AST.EffectDeclare = undefined; 
 
     constructor(){
         super(ALL_TOKENS, { nodeLocationTracking: 'onlyOffset' })
@@ -176,10 +176,7 @@ class Parser extends AstGenParser {
                     }},
                 ])
 
-                const ammt = this.SUBRULE(this.amount_spec_no_op)
-                if(ammt === "all"){
-                    throw Context.error( new Error("Cannot specify 'all' in row_spec") )
-                }
+                const ammt = this.SUBRULE(this.expect_number_simple)
                 this.ACTION(() => { flag = isRow ? new AST.RowFlag(new AST.AmountSpec(ammt)) : new AST.ColFlag(new AST.AmountSpec(ammt)) })
             }},
             //property of card (style 1 : row of card)
@@ -286,13 +283,22 @@ class Parser extends AstGenParser {
                 this.CONSUME(TOKENS.keyword_random)
                 this.ACTION(() => { flag = new AST.RandomFlag() })
             }},
-            {
-                ALT: () => {
-                    const flg = this.SUBRULE(this.row_or_col_spec)
-                    this.ACTION(() => { flag = flg })
-                },
-                GATE : () => this.lookaheadUntilToken(TOKENS.keyword_row, TOKENS.keyword_col)
-            },
+            {ALT : () => {
+                let isRow : boolean = false
+                this.OR1([
+                    {ALT: () => {
+                        this.CONSUME(TOKENS.keyword_row)
+                        this.ACTION(() => { isRow = true })
+                    }},
+                    {ALT: () => {
+                        this.CONSUME(TOKENS.keyword_col)
+                        // this.ACTION(() => { isRow = false })
+                    }},
+                ])
+
+                const ammt = this.SUBRULE(this.expect_number_simple)
+                this.ACTION(() => { flag = isRow ? new AST.RowFlag(new AST.AmountSpec(ammt)) : new AST.ColFlag(new AST.AmountSpec(ammt)) })
+            }},
         ])
         return this.ACTION(() => flag!)
     })
@@ -1065,47 +1071,38 @@ class Parser extends AstGenParser {
     })
 
     private lookaheadUntilToken(...token : TokenType[]){
-        let i = 1
-        let nextToken = this.LA(i)
-        while(nextToken.tokenType.name !== "EOF"){
-            if(token.some(t => t.tokenTypeIdx === nextToken.tokenType.tokenTypeIdx)){
-                return true
-            }
-            i++
-            nextToken = this.LA(i)
-        }
-        return false
+        return this.findToken(token) !== undefined
     }
 
-    private firstTokenOutOfEquals(
-        arr : TokenType[],
-        check: TokenType
-    ){
+    private findToken(token : TokenType[]){
         let i = 1
         let nextToken = this.LA(i)
         while(nextToken.tokenType.name !== "EOF"){
-            const T = arr.find(t => t.tokenTypeIdx === nextToken.tokenType.tokenTypeIdx)
-            if(T){
-                return T.tokenTypeIdx === check.tokenTypeIdx
+            for(const T of token){
+                if(nextToken.tokenType.tokenTypeIdx === T.tokenTypeIdx){
+                    return nextToken
+                }
             }
             i++
             nextToken = this.LA(i)
         }
-        return false
+        return undefined
     }
 
     private anyobj_or = ([
-        [TOKENS.keyword_card, this.expect_card],
-        [TOKENS.keyword_effect, this.expect_effect],
-        [TOKENS.keyword_pos, this.expect_pos],
-        [TOKENS.keyword_zone_name, this.expect_zone],
+        [ TOKENS.keyword_card,      this.expect_card   ],
+        [ TOKENS.keyword_effect,    this.expect_effect ],
+        [ TOKENS.keyword_pos,       this.expect_pos    ],
+        [ TOKENS.keyword_zone_name, this.expect_zone   ],
     ] as const)
 
     expect_anything = this.RULE("expect_anything", () => {
         let result: AST.CardTarget | AST.EffectTarget | AST.PosTarget | AST.ZoneTarget | AST.BackreferenceBounded | undefined
         // console.log("Inside ecpect_anything, next tokens are: ", getTokenStream(this as any))
         
-        const lookaheadTokens = this.anyobj_or.map(t => t[0])
+        const firstTokenOutof = this.findToken(
+            this.anyobj_or.map(t => t[0])
+        )
         const OR_OPTIONS = (startIdx : number) => {
             return this.anyobj_or.map((t, idx) => (
                 {
@@ -1113,7 +1110,7 @@ class Parser extends AstGenParser {
                         const res = this.subrule(startIdx + idx, t[1] as ParserMethod<any, any>)
                         this.ACTION(() => { result = res })
                     },
-                    GATE : () => this.firstTokenOutOfEquals(lookaheadTokens, t[0])
+                    GATE : () => firstTokenOutof !== undefined && firstTokenOutof.tokenType.tokenTypeIdx === t[0].tokenTypeIdx
                 }
             ))
         }
@@ -1125,16 +1122,20 @@ class Parser extends AstGenParser {
                     this.beginRecordTokens()
                     // console.log("Inside backreference, next tokens are: ", getTokenStream(this as any))
                     this.CONSUME2(TOKENS.keyword_back_refrence)
-                    let ref: AST.Backreference | undefined
                     this.OPTION(() => {
                         this.OR1(OR_OPTIONS(0))
                     })
                     this.ACTION(() => {
-                        if (!ref) {
-                            const info = this.endRecordTokens()
-                            ref = new AST.AnyBackreference(info.raw)
+                        const info = this.endRecordTokens()
+                        if (!result) {
+                            result = tryBindBackReference(
+                                new AST.AnyBackreference(info.raw)
+                            )
                         }
-                        result = tryBindBackReference(ref)
+                        else if(!(result instanceof AST.Backreference)) 
+                            result = tryBindBackReference(
+                                new AST.Backreference(info.raw, result)
+                            );
                     })
                 },
                 GATE : () => this.LA(1).tokenType.tokenTypeIdx === TOKENS.keyword_back_refrence.tokenTypeIdx
@@ -1148,4 +1149,4 @@ class Parser extends AstGenParser {
 }
 
 export const parser = new Parser()
-export const visitor = parser.getBaseCstVisitorConstructor()
+// export const visitor = parser.getBaseCstVisitorConstructor()

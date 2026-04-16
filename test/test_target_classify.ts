@@ -1,8 +1,5 @@
 import { EffectDeclare, ExpectedTarget, Pipeline, TargetType } from "../core/types";
-import { Context } from "../core/Utils/Context";
-import { expectSimpleNumberPipeline } from "../stage4";
 import { test } from "./cli";
-import { parser } from "../stage4/parser";
 import { CONFIG, InternalVariable } from "../core";
 import { classifySingle } from "../stage4";
 import { lexer } from "../stage4/lexer";

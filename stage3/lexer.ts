@@ -12,7 +12,6 @@ const is_synonyms = [
 const tokens = new TokenStorage()
 .SKIPPED("whitespace", /\s+/)
 .SYMBOLS("SIGN", /[+-]+/)
-.ID("", /[a-zA-Z0-9_,*<>=?\(\)\[\]\{\}]+|.[a-zA-Z0-9_,*<>=?\(\)\[\]\{\}]+/)
 .OP("is", 
     ...is_synonyms,
     ...is_synonyms.map(s => "not " + s),
@@ -59,7 +58,6 @@ const tokens = new TokenStorage()
 .KEYWORD("heal", "heals", "healed", "healing")
 .KEYWORD("duplicate", "duplicates", "duplicated")
 .KEYWORD("attack", "attacks")
-.KEYWORD("lock", "locks", "locked")
 .KEYWORD("cannot", "can't", "cant")
 .KEYWORD("to")
 .KEYWORD("current")
@@ -71,16 +69,14 @@ const tokens = new TokenStorage()
 .KEYWORD("time")
 .KEYWORD("times")
 .KEYWORD("no")
-.KEYWORD("more")
-.KEYWORD("less")
-.KEYWORD("than")
-.KEYWORD("count")
-.KEYWORD("number")
 .KEYWORD("on")
 .KEYWORD("any")
 .KEYWORD("stat")
 .KEYWORD("new")
 
+
+.ID("KEYWORD", ireg(...CONFIG.ALL_KEYWORDS.filter(k => k.includes(" ")))) //keyword grouping first
+.ID("", /[a-zA-Z0-9_,*<>=?\(\)\[\]\{\}]+|.[a-zA-Z0-9_,*<>=?\(\)\[\]\{\}]+/)
 
 export const ALL_TOKENS = tokens.all
 export const TOKENS = tokens.createStorageObj()

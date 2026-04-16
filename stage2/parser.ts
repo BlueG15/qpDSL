@@ -152,4 +152,4 @@ class Parser extends AstGenParser {
 }
 
 export const parser = new Parser()
-export const visitor = parser.getBaseCstVisitorConstructor()
+// export const visitor = parser.getBaseCstVisitorConstructor()

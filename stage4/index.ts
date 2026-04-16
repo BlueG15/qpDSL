@@ -1,4 +1,4 @@
-import { lexer } from "./lexer";
+import { lexer, TOKENS } from "./lexer";
 import { parser } from "./parser";
 import * as AST from "../core/types"
 import * as ERR from "../core/error"
@@ -6,59 +6,18 @@ import { Pipeline } from "../core/types";
 import { Context } from "../core/Utils/Context";
 import { CONFIG, getTokenStream } from "../core";
 
-export const expectCardPipeline = Pipeline.LexParseAST(
-    lexer,
-    parser,
-    "expect_card",
-    ERR.CannotTokenizeTarget,
-)
+let IS_EXECUTING_RULE : (
+    keyof typeof parser & `expect_${string}`
+) = "expect_anything"
 
-export const expectEffectPipeline = Pipeline.LexParseAST(
-    lexer,
-    parser,
-    "expect_effect",
-    ERR.CannotTokenizeTarget
-)
+const ruleGetter = () => {
+    return IS_EXECUTING_RULE
+}
 
-export const expectPosPipeline = Pipeline.LexParseAST(
+const targetClassifierPipe = Pipeline.lexParseASTGeneric<AST.AnyInferedTarget>(
     lexer,
     parser,
-    "expect_pos",
-    ERR.CannotTokenizeTarget
-)
-
-export const expectZonePipeline = Pipeline.LexParseAST(
-    lexer,
-    parser,
-    "expect_zone",
-    ERR.CannotTokenizeTarget
-)
-
-export const expectPlayerPipeline = Pipeline.LexParseAST(
-    lexer,
-    parser,
-    "expect_player",
-    ERR.CannotTokenizeTarget
-)
-
-export const expectSimpleNumberPipeline = Pipeline.LexParseAST(
-    lexer,
-    parser,
-    "expect_number_simple",
-    ERR.CannotTokenizeTarget
-)
-
-export const expectExtendedNumberPipeline = Pipeline.LexParseAST(
-    lexer,
-    parser,
-    "expect_number_extended",
-    ERR.CannotTokenizeTarget
-)
-
-export const expectAnythingPipeline = Pipeline.LexParseAST(
-    lexer,
-    parser,
-    "expect_anything",
+    ruleGetter,
     ERR.CannotTokenizeTarget
 )
 
@@ -74,29 +33,25 @@ export const classifyTargetPipeline : Pipeline<AST.ExpectedTarget, AST.InferedTa
         if(CONFIG.VERBOSE) console.log("Classifying target with raw:", raw, "and expected type:", type);
         if(CONFIG.VERBOSE) console.log("Tokens for target classification:", tokens);
 
-        let target : AST.InferedTarget | undefined = undefined
-
         //things already have a type like internal vars and stuff
         if(ctx instanceof AST.InferedTarget) {
             if(CONFIG.VERBOSE) console.log("Target already infered, skipping classification", ctx);
-            target = (ctx as any);
+            return ctx
         }
 
-        function classifyAST(){
-            switch(type){
-                case AST.TargetType.Card: return expectCardPipeline.pipe(raw)
-                case AST.TargetType.Effect: return expectEffectPipeline.pipe(raw)
-                case AST.TargetType.Position: return expectPosPipeline.pipe(raw)
-                case AST.TargetType.Zone: return expectZonePipeline.pipe(raw)
-                case AST.TargetType.Player: return expectPlayerPipeline.pipe(raw)
-                case AST.TargetType.Number: return expectSimpleNumberPipeline.pipe(raw)
-                default: return expectAnythingPipeline.pipe(raw)
-            }
+        IS_EXECUTING_RULE = "expect_anything"
+
+        switch(type){
+            case AST.TargetType.Card     : {IS_EXECUTING_RULE = "expect_card";          break;}
+            case AST.TargetType.Effect   : {IS_EXECUTING_RULE = "expect_effect";        break;}
+            case AST.TargetType.Position : {IS_EXECUTING_RULE = "expect_pos";           break;}
+            case AST.TargetType.Zone     : {IS_EXECUTING_RULE = "expect_zone";          break;}
+            case AST.TargetType.Player   : {IS_EXECUTING_RULE = "expect_player";        break;}
+            case AST.TargetType.Number   : {IS_EXECUTING_RULE = "expect_number_simple"; break;}
         }
 
-        if(target) return target
+        const R = targetClassifierPipe.pipe(raw)
 
-        const R = classifyAST()
         if(
             R instanceof AST.CardTarget   || 
             R instanceof AST.EffectTarget || 
@@ -106,10 +61,10 @@ export const classifyTargetPipeline : Pipeline<AST.ExpectedTarget, AST.InferedTa
         ){
             Context.cache(R)
         }
+
         return R
     }
 }
-
 
 /**
  * Try parse 1 with expected type
@@ -148,7 +103,12 @@ export function classifySingle(
     } catch(e1){
         const E = e1 instanceof Error ? e1 : new Error(String(e1));
         t.expectedType = originalType
-        if(!previous_error) return classifySingle(eff, t, index, p, err, E);
+
+        // test, dont recur
+        // Result : recur incur a super negligible cost
+        // ~ +20 - 30ms
+        // so inefficiency lies elsewhere
+        // if(!previous_error) return classifySingle(eff, t, index, p, err, E);
 
         err.push({
             path : p,
@@ -160,16 +120,12 @@ export function classifySingle(
     }
 }
 
-function isTypeEquivalent(t_expect : AST.TargetType, t_infered : AST.TargetType) : boolean {
-    if (t_expect === AST.TargetType.Any) return true;
-    return t_expect === t_infered
-}
-
 function classifyPaths(
     eff : AST.EffectDeclare,
     paths : {
         action_name: string;
         targets: AST.ExpectedTarget[];
+        anchor_length : number;
     }[],
 ){
     const err_arr : {
@@ -178,43 +134,50 @@ function classifyPaths(
         target_index : number,
         error : Error
     }[] = []
-    const P = paths.map(p => {
+    const P : {
+        action_name: string;
+        targets: (AST.AnyInferedTarget | AST.Backreference)[];
+        anchor_length : number;
+    }[] = []
+
+    outer : for(const p of paths){
         const temp_err : typeof err_arr = []
         if(p.targets.length === 0){
-            return {
+            P.push({
                 action_name : p.action_name,
-                targets : []
-            }
+                anchor_length : p.anchor_length,
+                targets : [],
+            })
+            continue outer;
         }
-        const inferedTargets = p.targets.map((t, index) => {
+        const inferedTargets : (AST.AnyInferedTarget | AST.Backreference)[] = []
+        for(let index = 0; index < p.targets.length; index++){
+            const t = p.targets[index]
             parser.bindTarget(t, eff)
             const R = classifySingle(eff, t, index, p, temp_err)
             if(CONFIG.VERBOSE) console.log(`[DEBUG] After classifySingle for target "${t.raw}":`, { R: R ? 'defined' : 'undefined', temp_err_length: temp_err.length });
-            if(!R) return R;
-            const typeInfo = isTypeEquivalent(t.expectedType, R.inferredType)
-            if(typeInfo === false){
+            if(!R) {
+                //early stop
+                err_arr.push(...temp_err)
+                continue outer; //path invalid
+            }
+            if(t.expectedType !== AST.TargetType.Any && t.expectedType !== R.inferredType){
                 err_arr.push({
                     path : p,
                     target : t,
                     target_index : index,
                     error : new ERR.TargetTypeConflictError(AST.TargetType[t.expectedType], AST.TargetType[R.inferredType])
                 })
-                return undefined
+                continue outer; //path invalid
             }
-            return R
-        })
-        if(inferedTargets.some(t => t === undefined)){
-            err_arr.push(...temp_err)
-            return undefined
+            inferedTargets.push(R as any)
         }
-        return {
+        P.push({
             action_name : p.action_name,
-            targets : inferedTargets as (AST.AnyBackreference | AST.Backreference)[]
-        }
-    }).filter(p => p !== undefined) as {
-        action_name : string,
-        targets : (AST.AnyBackreference | AST.Backreference)[]
-    }[]
+            anchor_length : p.anchor_length,
+            targets : inferedTargets
+        })
+    }
     return [P, err_arr] as const
 }
 
@@ -222,32 +185,33 @@ const classifySegmentPipeline : Pipeline<{
     possibleClassificationPaths: {
         action_name: string;
         targets: AST.ExpectedTarget[];
+        anchor_length : number;
     }[]
 } & AST.SentenceSegment, {
     action_name: string;
-    targets: AST.InferedTarget[];  
+    targets: AST.InferedTarget[]; 
 }> = {
-    accept : (ctx) => {
-        return ctx instanceof AST.SentenceSegment && "possibleClassificationPaths" in ctx
+    accept(ctx){
+        return ctx instanceof AST.SentenceSegment && 'possibleClassificationPaths' in ctx
     },
     pipe(ctx){
-        if(
-            !ctx.owner
-        ){
-            throw new Error("Segment has no owner, skipping classification")
-        }
+        // if(
+        //     !ctx.owner
+        // ){
+        //     throw new Error("Segment has no owner, skipping classification")
+        // }
 
-        if(
-            !ctx.owner!.owner
-        ){
-            throw new Error("Sentece has no owner, skipping classification")
-        }
+        // if(
+        //     !ctx.owner!.owner
+        // ){
+        //     throw new Error("Sentece has no owner, skipping classification")
+        // }
 
-        if(
-            !ctx.owner!.owner!.owner
-        ){
-            throw new Error("Effect body segment has no owner, skipping classification")
-        }
+        // if(
+        //     !ctx.owner!.owner!.owner
+        // ){
+        //     throw new Error("Effect body segment has no owner, skipping classification")
+        // }
         
         let [paths, ERR2] = classifyPaths(ctx.owner!.owner!.owner!, ctx.possibleClassificationPaths)
 
@@ -267,14 +231,38 @@ const classifySegmentPipeline : Pipeline<{
         }
 
         if(paths.length > 1){
-            Context.in(ctx)
-            throw Context.error( new ERR.AmbiguousClassificationError(
-                Object.fromEntries(paths.map(p => [p.action_name, p.targets.map(t => t.raw)]))
-            ))
+            // chevrotain DOES not throw an error for unconsumed inputs for some reason
+            // so we try to pick the longest match here
+
+            let best_paths : typeof paths = []
+            let best_score = -1
+
+            const best_anchor_length = Math.max(...paths.map(p => p.anchor_length))
+            const best_paths_init = paths.filter(p => p.anchor_length === best_anchor_length)
+
+            for(const p of best_paths_init){
+                const score = p.targets.flatMap(p => p.stringify()).join("").length
+                if(score > best_score){
+                    best_score = score
+                    best_paths = [p]
+                } else if (score === best_score){
+                    best_paths.push(p)
+                }
+            }
+
+            if(best_paths.length > 1){
+                Context.in(ctx)
+                throw Context.error( new ERR.AmbiguousClassificationError(
+                    Object.fromEntries(best_paths.map(p => [p.action_name, p.targets.map(t => t.stringify().join("\n"))]))
+                ))
+            }
+
+            paths = best_paths
         }
 
         const ret = paths[0]
-        Context.cache(...ret.targets.filter(t => !(t instanceof AST.Backreference)))
+        const non_backref_targets = ret.targets.filter(t => !(t instanceof AST.Backreference)) as AST.AnyInferedTarget[]
+        Context.cache(...non_backref_targets)
         return paths[0]
     }
 }
@@ -302,7 +290,7 @@ export const stage4pipeline : Pipeline<
                 },
                 target => {
                     return target.map(t => {
-                        console.log("segment", t)
+                        // console.log("segment", t)
                         const inferedTarget = t.targets.map((target, index) => {
                             parser.bindTarget(target, eff)
                             try {
@@ -333,16 +321,17 @@ export const stage4pipeline : Pipeline<
             )
             return [newBody]
         })
+        IS_EXECUTING_RULE = "expect_number_extended"
         newEff.variables = Object.fromEntries(
             Object.entries(newEff.variables).map(([k, v]) => {
                 if(v instanceof AST.RuntimeVariable && v.value instanceof AST.ExpectedTarget){
                     parser.bindTarget(v.value, newEff)
-                    const inferedTarget = expectExtendedNumberPipeline.pipe(v.value.raw)
+                    const inferedTarget = targetClassifierPipe.pipe(v.value.raw)
                     return [k, new AST.RuntimeVariable(v.raw, v.name, inferedTarget)] as const
                 }
                 return [k, v]
             })
-        )
+        ) 
         return newEff
     }
 }

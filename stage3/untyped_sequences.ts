@@ -1,13 +1,5 @@
 export const data = {
     "creation": {
-        "keyword_lock": {
-            "seq": [
-                "keyword_lock"
-            ],
-            "action_names": [
-                "a_lock_0"
-            ]
-        },
         "keyword_reprogram": {
             "seq": [
                 "keyword_reprogram"
@@ -213,16 +205,7 @@ export const data = {
                 "Obj"
             ],
             "action_names": [
-                "a_draw_0"
-            ]
-        },
-        "keyword_draw-Obj-Obj": {
-            "seq": [
-                "keyword_draw",
-                "Obj",
-                "Obj"
-            ],
-            "action_names": [
+                "a_draw_0",
                 "a_draw_1"
             ]
         },
@@ -233,7 +216,8 @@ export const data = {
                 "keyword_card"
             ],
             "action_names": [
-                "a_draw_2"
+                "a_draw_2",
+                "a_draw_3"
             ]
         },
         "keyword_turn-keyword_draw": {
@@ -242,7 +226,7 @@ export const data = {
                 "keyword_draw"
             ],
             "action_names": [
-                "a_draw_3"
+                "a_draw_4"
             ]
         },
         "keyword_turn-keyword_draw-Obj": {
@@ -252,29 +236,8 @@ export const data = {
                 "Obj"
             ],
             "action_names": [
-                "a_draw_4",
-                "a_draw_5"
-            ]
-        },
-        "keyword_turn-keyword_draw-Obj-Obj": {
-            "seq": [
-                "keyword_turn",
-                "keyword_draw",
-                "Obj",
-                "Obj"
-            ],
-            "action_names": [
+                "a_draw_5",
                 "a_draw_6"
-            ]
-        },
-        "keyword_turn-keyword_draw-keyword_card": {
-            "seq": [
-                "keyword_turn",
-                "keyword_draw",
-                "keyword_card"
-            ],
-            "action_names": [
-                "a_draw_7"
             ]
         },
         "keyword_turn-keyword_draw-Obj-keyword_card": {
@@ -285,6 +248,7 @@ export const data = {
                 "keyword_card"
             ],
             "action_names": [
+                "a_draw_7",
                 "a_draw_8"
             ]
         },
@@ -562,28 +526,22 @@ export const data = {
                 "a_attack_8"
             ]
         },
-        "Obj-keyword_cannot-keyword_take-keyword_more-keyword_than-Obj-keyword_damage": {
+        "Obj-keyword_cannot-keyword_take-keyword_damage": {
             "seq": [
                 "Obj",
                 "keyword_cannot",
                 "keyword_take",
-                "keyword_more",
-                "keyword_than",
-                "Obj",
                 "keyword_damage"
             ],
             "action_names": [
                 "a_damage_prevent_0"
             ]
         },
-        "Obj-keyword_cannot-keyword_take-keyword_no-keyword_more-keyword_than-Obj-keyword_damage": {
+        "Obj-keyword_cannot-keyword_take-Obj-keyword_damage": {
             "seq": [
                 "Obj",
                 "keyword_cannot",
                 "keyword_take",
-                "keyword_no",
-                "keyword_more",
-                "keyword_than",
                 "Obj",
                 "keyword_damage"
             ],
@@ -591,95 +549,29 @@ export const data = {
                 "a_damage_prevent_1"
             ]
         },
-        "Obj-keyword_cannot-keyword_take-keyword_less-keyword_than-Obj-keyword_damage": {
+        "Obj-keyword_cannot-keyword_take-DAMAGE_TYPE-keyword_damage": {
             "seq": [
                 "Obj",
                 "keyword_cannot",
                 "keyword_take",
-                "keyword_less",
-                "keyword_than",
-                "Obj",
+                "DAMAGE_TYPE",
                 "keyword_damage"
             ],
             "action_names": [
                 "a_damage_prevent_2"
             ]
         },
-        "Obj-keyword_cannot-keyword_take-keyword_no-keyword_less-keyword_than-Obj-keyword_damage": {
+        "Obj-keyword_cannot-keyword_take-Obj-DAMAGE_TYPE-keyword_damage": {
             "seq": [
                 "Obj",
                 "keyword_cannot",
                 "keyword_take",
-                "keyword_no",
-                "keyword_less",
-                "keyword_than",
                 "Obj",
+                "DAMAGE_TYPE",
                 "keyword_damage"
             ],
             "action_names": [
                 "a_damage_prevent_3"
-            ]
-        },
-        "Obj-keyword_cannot-keyword_take-keyword_more-keyword_than-Obj-DAMAGE_TYPE-keyword_damage": {
-            "seq": [
-                "Obj",
-                "keyword_cannot",
-                "keyword_take",
-                "keyword_more",
-                "keyword_than",
-                "Obj",
-                "DAMAGE_TYPE",
-                "keyword_damage"
-            ],
-            "action_names": [
-                "a_damage_prevent_4"
-            ]
-        },
-        "Obj-keyword_cannot-keyword_take-keyword_no-keyword_more-keyword_than-Obj-DAMAGE_TYPE-keyword_damage": {
-            "seq": [
-                "Obj",
-                "keyword_cannot",
-                "keyword_take",
-                "keyword_no",
-                "keyword_more",
-                "keyword_than",
-                "Obj",
-                "DAMAGE_TYPE",
-                "keyword_damage"
-            ],
-            "action_names": [
-                "a_damage_prevent_5"
-            ]
-        },
-        "Obj-keyword_cannot-keyword_take-keyword_less-keyword_than-Obj-DAMAGE_TYPE-keyword_damage": {
-            "seq": [
-                "Obj",
-                "keyword_cannot",
-                "keyword_take",
-                "keyword_less",
-                "keyword_than",
-                "Obj",
-                "DAMAGE_TYPE",
-                "keyword_damage"
-            ],
-            "action_names": [
-                "a_damage_prevent_6"
-            ]
-        },
-        "Obj-keyword_cannot-keyword_take-keyword_no-keyword_less-keyword_than-Obj-DAMAGE_TYPE-keyword_damage": {
-            "seq": [
-                "Obj",
-                "keyword_cannot",
-                "keyword_take",
-                "keyword_no",
-                "keyword_less",
-                "keyword_than",
-                "Obj",
-                "DAMAGE_TYPE",
-                "keyword_damage"
-            ],
-            "action_names": [
-                "a_damage_prevent_7"
             ]
         },
         "Obj-keyword_take-keyword_no-keyword_damage": {
@@ -690,7 +582,7 @@ export const data = {
                 "keyword_damage"
             ],
             "action_names": [
-                "a_damage_prevent_8"
+                "a_damage_prevent_4"
             ]
         },
         "Obj-keyword_take-keyword_no-DAMAGE_TYPE-keyword_damage": {
@@ -702,37 +594,11 @@ export const data = {
                 "keyword_damage"
             ],
             "action_names": [
-                "a_damage_prevent_9"
+                "a_damage_prevent_5"
             ]
         }
     },
     "condition": {
-        "keyword_count-keyword_of-Obj-op_is-Obj": {
-            "seq": [
-                "keyword_count",
-                "keyword_of",
-                "Obj",
-                "op_is",
-                "Obj"
-            ],
-            "action_names": [
-                "cond_count_0",
-                "cond_count_2"
-            ]
-        },
-        "keyword_number-keyword_of-Obj-op_is-Obj": {
-            "seq": [
-                "keyword_number",
-                "keyword_of",
-                "Obj",
-                "op_is",
-                "Obj"
-            ],
-            "action_names": [
-                "cond_count_1",
-                "cond_count_3"
-            ]
-        },
         "keyword_exist-Obj": {
             "seq": [
                 "keyword_exist",
@@ -740,7 +606,9 @@ export const data = {
             ],
             "action_names": [
                 "cond_exist_0",
-                "cond_exist_1"
+                "cond_exist_1",
+                "cond_exist_2",
+                "cond_exist_3"
             ]
         },
         "Obj-op_is-Obj": {
@@ -849,24 +717,14 @@ export const data = {
                 "cond_card_on_1"
             ]
         },
-        "Obj-keyword_has-EFFECT_TYPE": {
+        "Obj-keyword_has-EFFECT_MODIFIER": {
             "seq": [
                 "Obj",
                 "keyword_has",
-                "EFFECT_TYPE"
+                "EFFECT_MODIFIER"
             ],
             "action_names": [
                 "cond_effect_has_0"
-            ]
-        },
-        "Obj-keyword_has-EFFECT_SUBTYPE": {
-            "seq": [
-                "Obj",
-                "keyword_has",
-                "EFFECT_SUBTYPE"
-            ],
-            "action_names": [
-                "cond_effect_has_1"
             ]
         },
         "Obj-keyword_action": {
@@ -1125,15 +983,6 @@ export const data = {
                 "a_move_20"
             ]
         },
-        "Obj-keyword_draw": {
-            "seq": [
-                "Obj",
-                "keyword_draw"
-            ],
-            "action_names": [
-                "a_draw_9"
-            ]
-        },
         "Obj-keyword_draw-Obj": {
             "seq": [
                 "Obj",
@@ -1141,18 +990,8 @@ export const data = {
                 "Obj"
             ],
             "action_names": [
+                "a_draw_9",
                 "a_draw_10"
-            ]
-        },
-        "Obj-keyword_draw-Obj-Obj": {
-            "seq": [
-                "Obj",
-                "keyword_draw",
-                "Obj",
-                "Obj"
-            ],
-            "action_names": [
-                "a_draw_11"
             ]
         },
         "Obj-keyword_draw-Obj-keyword_card": {
@@ -1163,6 +1002,7 @@ export const data = {
                 "keyword_card"
             ],
             "action_names": [
+                "a_draw_11",
                 "a_draw_12"
             ]
         },

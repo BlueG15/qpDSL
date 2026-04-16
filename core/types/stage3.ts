@@ -24,7 +24,8 @@ export class ActionSegment extends SentenceSegment {
         segment : SentenceSegment,
         public possibleClassificationPaths : {
             action_name : string,
-            targets : ExpectedTarget[]
+            targets : ExpectedTarget[],
+            anchor_length : number
         }[],
         public isInstead : boolean
     ){
@@ -77,7 +78,8 @@ export class ConditionSegment extends SentenceSegment {
         segment : SentenceSegment,
         public possibleClassificationPaths : {
             action_name : string,
-            targets : ExpectedTarget[]
+            targets : ExpectedTarget[],
+            anchor_length : number
         }[],
     ){
         super(segment.raw)

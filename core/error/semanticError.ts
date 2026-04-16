@@ -115,8 +115,8 @@ export class FailToClassifyActionError extends ActionClassificationError {
         else {
             for(const p of longestPaths){
                 errStr += `\n- ${p.action_name.join(", ")}:`
-                errStr += `\nhas anchors: "${p.matched_anchors.join(", ")}"`
-                errStr += `\nmissing anchors: "${p.missing_anchors.join(", ")}"`
+                errStr += `\nsaw anchors upto: "${p.matched_anchors.join(", ")}"`
+                errStr += `\nbut expecting next to be: "${p.failed_anchor}"`
             }
         }
         super(errStr)

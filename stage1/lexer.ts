@@ -63,9 +63,31 @@ const sentence_separator = (
 
 const effect_prefix = createToken({
     name : "EFFECT_PREFIX",
-    pattern : /\be_/,
     // pop_mode : true,
-    push_mode : "meta_data"
+    push_mode : "meta_data",
+    pattern : {
+        exec : (text, startOffset) => {
+            //matches e_ but only if the previous matched token is a sentence separator or it's the start of the text
+            let before_was_sentence_sep = false
+            for(let i = startOffset - 1; i >= 0; i--){
+                if(/\s/.test(text[i])){
+                    continue;
+                }
+                else if(/\./.test(text[i])){
+                    before_was_sentence_sep = true
+                    break;
+                }
+                else break;
+            }
+            if(before_was_sentence_sep || startOffset === 0){
+                if(text.startsWith("e_", startOffset)){
+                    return ["e_"] as RegExpExecArray
+                }
+            }
+            return null
+        }
+    },
+    line_breaks : false
 })
 
 const ID_UNKNOWN = createToken({

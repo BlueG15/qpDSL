@@ -73,6 +73,37 @@ export class Pipeline {
         return res
     }
 
+    static lexParseASTGeneric<T_out>(
+        lexer : Lexer,
+        parser : AstGenParser,
+        ruleGetter : () => string,
+        lexError : new (token : ILexingError) => ASTError = ERR.UnknownLexerError,
+    ){
+        const res : Pipeline<string, T_out> = {
+            accept(context) {
+                return typeof context === "string"
+            },
+            pipe(s) {
+                Context.raw = s
+
+                const tokenStream = lexer.tokenize(s);
+                if(tokenStream.errors.length > 0 && lexError){
+                    throw Context.error( new lexError(tokenStream.errors[0]) )
+                }
+                
+                if(!parser.isBounded){
+                    throw Context.error( new Error("Parser must be bounded") )
+                }
+
+                parser.input = tokenStream.tokens;
+                if(CONFIG.VERBOSE) console.log("Token stream for parser:", getTokenStream(parser as any));
+                return (parser[ruleGetter() as keyof AstGenParser] as () => T_out)() as T_out
+            },
+        }
+
+        return res  
+    }
+
     static lex(lexer : Lexer, lexerError? : new () => ASTError){
         const res : Pipeline<string, IToken[]> = {
             accept(context) {
@@ -94,11 +125,13 @@ export class Pipeline {
         if(CONFIG.VERBOSE) console.log("Executing pipeline with input:", input);
         if(typeof p === "function") return p(input);
         if(!p.accept(input)) {
-            if(CONFIG.VERBOSE) console.log("Pipeline rejected context:", input);
-            console.log("Offending pipeline:", {
-                accept : p.accept.toString(), 
-                pipe: p.pipe.toString()
-            })
+            if(CONFIG.VERBOSE) {
+                console.log("Pipeline rejected context:", input);
+                console.log("Offending pipeline:", {
+                    accept : p.accept.toString(), 
+                    pipe: p.pipe.toString()
+                })
+            }
             throw Context.error( new Error("Pipeline rejected context") )
         }
         return p.pipe(input)

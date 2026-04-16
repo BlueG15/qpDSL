@@ -34,9 +34,15 @@ class ContextClass {
     out(){
         this.stack.pop()
     }
-    error(err : ASTError | Error){
-        if(err instanceof ASTError) err.blame(...this.stack.reverse());
-        return new Error(err.toString())
+    error(err_in : ASTError | Error){
+        let err : ASTError;
+        if(!(err_in instanceof ASTError)) {
+            err = new ASTError(err_in.message)
+        } else err = err_in;
+        err.blame(...this.stack.reverse());
+        err.phase = this.stagedAdvaned
+        return err
+        // return new Error(err.toString())
     }
 
     /**

@@ -1,9 +1,10 @@
 import { ASTNode } from "../types/generic";
 
-export abstract class ASTError extends Error {
+export class ASTError extends Error {
     causeStack : (ASTNode | string)[] = []
     messageStack : string[] = []
     nameStack : string[] = []
+    phase = -1
 
     override get message(){
         return this.messageStack.join("\n")
@@ -24,9 +25,9 @@ export abstract class ASTError extends Error {
         this.nameStack.unshift(str)
     }
 
-    constructor(){
-        super(`Unknown Error at stage`);
-        this.name = `Error at stage`
+    constructor(message = `Unknown Error`){
+        super(message);
+        this.name = `Unknown Error`
     }
 
     blame(...node : (ASTNode | string)[]) : void {
@@ -64,6 +65,7 @@ export abstract class ASTError extends Error {
     override toString() : string {
         let result = this.name + "\n" + this.message
         let i = 2;
+        result += `\n\nError occurred at stage ${this.phase >= 0 ? this.phase : "Unknown"}`
         for (const node of this.causeStack) {
             const arrowStr = "-".repeat(i++) + "> "
             result += "\n"
